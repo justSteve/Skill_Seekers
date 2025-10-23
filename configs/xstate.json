@@ -1,0 +1,41 @@
+{
+  "name": "xstate",
+  "description": "Stately.ai is a visual software modeling platform for modeling your app & business logic as state machines/statecharts and actors, and scales to any level of complexity.",
+  "base_url": "https://stately.ai/",
+  "start_urls": [
+    "https://stately.ai/docs/actor-model",
+    "https://stately.ai/docs/examples",
+    "https://stately.ai/docs/templates",
+    "https://stately.ai/docs/typescript",
+    "https://stately.ai/docs/cheatsheet",
+    "https://stately.ai/docs/state-machine-actors",
+    "https://stately.ai/docs/state-machine-actors",
+    "https://stately.ai/docs/invoke",
+    "https://stately.ai/docs/spawn",
+    "https://stately.ai/docs/inspection",
+    "https://stately.ai/docs/system",
+    "https://stately.ai/docs/observable-actors",
+    "https://stately.ai/docs/callback-actors",
+    "https://stately.ai/docs/transition-actors",
+    "https://stately.ai/docs/promise-actors",
+    "https://stately.ai/docs/xstate"
+  ],
+  "selectors": {
+    "main_content": "main",
+    "title": "h1",
+    "code_blocks": "pre code"
+  },
+  "url_patterns": {
+    "include": ["/learn", "/reference"],
+    "exclude": ["/community", "/blog"]
+  },
+  "categories": {
+    "getting_started": ["quick-start", "installation", "tutorial"],
+    "hooks": ["usestate", "useeffect", "usememo", "usecallback", "usecontext", "useref", "hook"],
+    "components": ["component", "props", "jsx"],
+    "state": ["state", "context", "reducer"],
+    "api": ["api", "reference"]
+  },
+  "rate_limit": 0.5,
+  "max_pages": 300
+}

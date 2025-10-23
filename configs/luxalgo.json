@@ -1,0 +1,24 @@
+{
+  "name": "luxalgo",
+  "description": "Trading indicators",
+  "base_url": "https://docs.luxalgo.com/docs/algos/",
+  "start_urls": ["https://docs.luxalgo.com/docs/algos/alert-scripting",
+    "https://docs.luxalgo.com/docs/algos/oscillator-matrix/",
+    "https://docs.luxalgo.com/docs/algos/signals-overlays",
+    "https://docs.luxalgo.com/docs/algos/price-action-concepts"
+  ],
+  "selectors": {
+    "main_content": "mdx-content",
+    "title": "h1",
+    "code_blocks": "pre code"
+  },
+  "url_patterns": {
+    "include": ["/learn", "/reference"],
+    "exclude": ["/community", "/blog"]
+  },
+  "categories": {
+    "getting_started": ["quick-start", "installation", "tutorial"]    
+  },
+  "rate_limit": 0.5,
+  "max_pages": 300
+}
