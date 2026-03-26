@@ -1,7 +1,7 @@
 # Frequently Asked Questions (FAQ)
 
-**Version:** 3.1.0-dev
-**Last Updated:** 2026-02-18
+**Version:** 3.2.0
+**Last Updated:** 2026-03-15
 
 ---
 
@@ -9,41 +9,58 @@
 
 ### What is Skill Seekers?
 
-Skill Seekers is a Python tool that converts documentation websites, GitHub repositories, and PDF files into AI-ready formats for 16+ platforms: LLM platforms (Claude, Gemini, OpenAI), RAG frameworks (LangChain, LlamaIndex, Haystack), vector databases (ChromaDB, FAISS, Weaviate, Qdrant, Pinecone), and AI coding assistants (Cursor, Windsurf, Cline, Continue.dev).
+Skill Seekers is a Python tool that converts 17 source types — documentation websites, GitHub repos, PDFs, videos, Word docs, EPUB books, Jupyter notebooks, local HTML files, OpenAPI specs, AsciiDoc, PowerPoint, RSS/Atom feeds, man pages, Confluence wikis, Notion pages, Slack/Discord exports, and local codebases — into AI-ready formats for 30+ platforms: LLM platforms (Claude, Gemini, OpenAI, MiniMax, OpenCode, Kimi, DeepSeek, Qwen, OpenRouter, Together AI, Fireworks AI, Markdown), RAG frameworks (LangChain, LlamaIndex, Haystack), vector databases (ChromaDB, FAISS, Weaviate, Qdrant, Pinecone), and AI coding assistants (Cursor, Windsurf, Cline, Continue.dev, Roo, Aider, Bolt, Kilo, Kimi Code).
 
 **Use Cases:**
 - Create custom documentation skills for your favorite frameworks
 - Analyze GitHub repositories and extract code patterns
 - Convert PDF manuals into searchable AI skills
-- Combine multiple sources (docs + code + PDFs) into unified skills
+- Import knowledge from Confluence, Notion, or Slack/Discord
+- Extract content from videos (YouTube, Vimeo, local files)
+- Convert Jupyter notebooks, EPUB books, or PowerPoint slides into skills
+- Parse OpenAPI/Swagger specs into API reference skills
+- Combine multiple sources (docs + code + PDFs + more) into unified skills
 
 ### Which platforms are supported?
 
-**Supported Platforms (16+):**
+**Supported Platforms (30+):**
 
-*LLM Platforms:*
+*LLM Platforms (12):*
 1. **Claude AI** - ZIP format with YAML frontmatter
 2. **Google Gemini** - tar.gz format for Grounded Generation
 3. **OpenAI ChatGPT** - ZIP format for Vector Stores
-4. **Generic Markdown** - ZIP format with markdown files
+4. **MiniMax** - ZIP format
+5. **OpenCode** - ZIP format
+6. **Kimi** - ZIP format
+7. **DeepSeek** - ZIP format
+8. **Qwen** - ZIP format
+9. **OpenRouter** - ZIP format for multi-model routing
+10. **Together AI** - ZIP format for open-source models
+11. **Fireworks AI** - ZIP format for fast inference
+12. **Generic Markdown** - ZIP format with markdown files
 
 *RAG Frameworks:*
-5. **LangChain** - Document objects for QA chains and agents
-6. **LlamaIndex** - TextNodes for query engines
-7. **Haystack** - Document objects for enterprise RAG
+13. **LangChain** - Document objects for QA chains and agents
+14. **LlamaIndex** - TextNodes for query engines
+15. **Haystack** - Document objects for enterprise RAG
 
 *Vector Databases:*
-8. **ChromaDB** - Direct collection upload
-9. **FAISS** - Index files for local similarity search
-10. **Weaviate** - Vector objects with schema creation
-11. **Qdrant** - Points with payload indexing
-12. **Pinecone** - Ready-to-upsert format
+16. **ChromaDB** - Direct collection upload
+17. **FAISS** - Index files for local similarity search
+18. **Weaviate** - Vector objects with schema creation
+19. **Qdrant** - Points with payload indexing
+20. **Pinecone** - Ready-to-upsert format
 
-*AI Coding Assistants:*
-13. **Cursor** - .cursorrules persistent context
-14. **Windsurf** - .windsurfrules AI coding rules
-15. **Cline** - .clinerules + MCP integration
-16. **Continue.dev** - HTTP context server (all IDEs)
+*AI Coding Assistants (9):*
+21. **Cursor** - .cursorrules persistent context
+22. **Windsurf** - .windsurfrules AI coding rules
+23. **Cline** - .clinerules + MCP integration
+24. **Continue.dev** - HTTP context server (all IDEs)
+25. **Roo** - .roorules AI coding rules
+26. **Aider** - Terminal AI coding assistant
+27. **Bolt** - Web IDE AI context
+28. **Kilo** - IDE AI context
+29. **Kimi Code** - IDE AI context
 
 Each platform has a dedicated adaptor for optimal formatting and upload.
 
@@ -77,12 +94,43 @@ The `--setup` command auto-detects your GPU vendor (NVIDIA CUDA, AMD ROCm, or CP
 - **AMD:** Uses `rocminfo` to find ROCm version → installs matching ROCm PyTorch
 - **CPU-only:** Installs lightweight CPU-only PyTorch
 
+### What source types are supported?
+
+Skill Seekers supports **17 source types**:
+
+| # | Source Type | CLI Command | Auto-Detection |
+|---|------------|-------------|----------------|
+| 1 | Documentation (web) | `scrape` / `create <url>` | HTTP/HTTPS URLs |
+| 2 | GitHub repo | `github` / `create owner/repo` | `owner/repo` or github.com URLs |
+| 3 | PDF | `pdf` / `create file.pdf` | `.pdf` extension |
+| 4 | Word (.docx) | `word` / `create file.docx` | `.docx` extension |
+| 5 | EPUB | `epub` / `create file.epub` | `.epub` extension |
+| 6 | Video | `video` / `create <url/file>` | YouTube/Vimeo URLs, video extensions |
+| 7 | Local codebase | `analyze` / `create ./path` | Directory paths |
+| 8 | Jupyter Notebook | `jupyter` / `create file.ipynb` | `.ipynb` extension |
+| 9 | Local HTML | `html` / `create file.html` | `.html`/`.htm` extensions |
+| 10 | OpenAPI/Swagger | `openapi` / `create spec.yaml` | `.yaml`/`.yml` with OpenAPI content |
+| 11 | AsciiDoc | `asciidoc` / `create file.adoc` | `.adoc`/`.asciidoc` extensions |
+| 12 | PowerPoint | `pptx` / `create file.pptx` | `.pptx` extension |
+| 13 | RSS/Atom | `rss` / `create feed.rss` | `.rss`/`.atom` extensions |
+| 14 | Man pages | `manpage` / `create cmd.1` | `.1`-`.8`/`.man` extensions |
+| 15 | Confluence | `confluence` | API or export directory |
+| 16 | Notion | `notion` | API or export directory |
+| 17 | Slack/Discord | `chat` | Export directory or API |
+
+The `create` command auto-detects the source type from your input, so you often don't need to specify a subcommand.
+
 ### How long does it take to create a skill?
 
 **Typical Times:**
 - Documentation scraping: 5-45 minutes (depends on size)
 - GitHub analysis: 1-5 minutes (basic) or 20-60 minutes (C3.x deep analysis)
 - PDF extraction: 30 seconds - 5 minutes
+- Video extraction: 2-10 minutes (depends on length and visual analysis)
+- Word/EPUB/PPTX: 10-60 seconds
+- Jupyter notebook: 10-30 seconds
+- OpenAPI spec: 5-15 seconds
+- Confluence/Notion import: 1-5 minutes (depends on space size)
 - AI enhancement: 30-60 seconds (LOCAL or API mode)
 - Total workflow: 10-60 minutes
 
@@ -214,6 +262,92 @@ skill-seekers pdf scanned.pdf --enable-ocr
 skill-seekers pdf document.pdf --extract-images --extract-tables
 ```
 
+### How do I scrape a Jupyter Notebook?
+
+```bash
+# Extract cells, outputs, and markdown from a notebook
+skill-seekers jupyter analysis.ipynb --name data-analysis
+
+# Or use auto-detection
+skill-seekers create analysis.ipynb
+```
+
+Jupyter extraction preserves code cells, markdown cells, and cell outputs. It works with `.ipynb` files from JupyterLab, Google Colab, and other notebook environments.
+
+### How do I import from Confluence or Notion?
+
+**Confluence:**
+```bash
+# From Confluence Cloud API
+export CONFLUENCE_URL=https://yourorg.atlassian.net
+export CONFLUENCE_TOKEN=your-api-token
+export CONFLUENCE_EMAIL=your-email@example.com
+skill-seekers confluence --space MYSPACE --name my-wiki
+
+# From a Confluence HTML/XML export directory
+skill-seekers confluence --export-dir ./confluence-export --name my-wiki
+```
+
+**Notion:**
+```bash
+# From Notion API
+export NOTION_TOKEN=secret_...
+skill-seekers notion --database DATABASE_ID --name my-notes
+
+# From a Notion HTML/Markdown export directory
+skill-seekers notion --export-dir ./notion-export --name my-notes
+```
+
+### How do I convert Word, EPUB, or PowerPoint files?
+
+```bash
+# Word document
+skill-seekers word report.docx --name quarterly-report
+
+# EPUB book
+skill-seekers epub handbook.epub --name dev-handbook
+
+# PowerPoint presentation
+skill-seekers pptx slides.pptx --name training-deck
+
+# Or use auto-detection for any of them
+skill-seekers create report.docx
+skill-seekers create handbook.epub
+skill-seekers create slides.pptx
+```
+
+### How do I parse an OpenAPI/Swagger spec?
+
+```bash
+# From a local YAML/JSON file
+skill-seekers openapi api-spec.yaml --name my-api
+
+# Auto-detection works too
+skill-seekers create api-spec.yaml
+```
+
+OpenAPI extraction parses endpoints, schemas, parameters, and examples into a structured API reference skill.
+
+### How do I extract content from RSS feeds or man pages?
+
+```bash
+# RSS/Atom feed
+skill-seekers rss https://blog.example.com/feed.xml --name blog-feed
+
+# Man page
+skill-seekers manpage grep.1 --name grep-manual
+```
+
+### How do I import from Slack or Discord?
+
+```bash
+# From a Slack export directory
+skill-seekers chat --platform slack --export-dir ./slack-export --name team-knowledge
+
+# From a Discord export directory
+skill-seekers chat --platform discord --export-dir ./discord-export --name server-archive
+```
+
 ### Can I combine multiple sources?
 
 Yes! Unified multi-source scraping:
@@ -283,6 +417,8 @@ skill-seekers install react --target claude --upload
 - Claude AI: Best for Claude Code integration
 - Google Gemini: Best for Grounded Generation in Gemini
 - OpenAI ChatGPT: Best for ChatGPT Custom GPTs
+- MiniMax/Kimi/DeepSeek/Qwen: Best for Chinese LLM ecosystem
+- OpenRouter/Together/Fireworks: Best for multi-model routing or open-source model access
 - Markdown: Generic export for other tools
 
 ### Can I use multiple platforms at once?
@@ -291,7 +427,7 @@ Yes! Package and upload to all platforms:
 
 ```bash
 # Package for all platforms
-for platform in claude gemini openai markdown; do
+for platform in claude gemini openai minimax kimi deepseek qwen openrouter together fireworks markdown; do
   skill-seekers package output/react/ --target $platform
 done
 
@@ -704,6 +840,6 @@ Yes!
 
 ---
 
-**Version:** 3.1.0-dev
-**Last Updated:** 2026-02-18
+**Version:** 3.2.0
+**Last Updated:** 2026-03-15
 **Questions? Ask on [GitHub Discussions](https://github.com/yusufkaraaslan/Skill_Seekers/discussions)**

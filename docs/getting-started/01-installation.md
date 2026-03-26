@@ -1,6 +1,6 @@
 # Installation Guide
 
-> **Skill Seekers v3.1.0**
+> **Skill Seekers v3.2.0**
 
 Get Skill Seekers installed and running in under 5 minutes.
 
@@ -86,6 +86,7 @@ pip install skill-seekers[all-llms]
 - Claude AI support
 - Google Gemini support
 - OpenAI ChatGPT support
+- MiniMax AI support
 - All vector databases
 - MCP server
 - Cloud storage (S3, GCS, Azure)
@@ -98,6 +99,7 @@ Install only what you need:
 # Specific platform only
 pip install skill-seekers[gemini]      # Google Gemini
 pip install skill-seekers[openai]      # OpenAI
+pip install skill-seekers[minimax]     # MiniMax AI
 pip install skill-seekers[chroma]      # ChromaDB
 
 # Multiple extras
@@ -115,6 +117,7 @@ pip install skill-seekers[dev]
 |-------|-------------|-----------------|
 | `gemini` | Google Gemini support | `pip install skill-seekers[gemini]` |
 | `openai` | OpenAI ChatGPT support | `pip install skill-seekers[openai]` |
+| `minimax` | MiniMax AI support | `pip install skill-seekers[minimax]` |
 | `mcp` | MCP server | `pip install skill-seekers[mcp]` |
 | `chroma` | ChromaDB export | `pip install skill-seekers[chroma]` |
 | `weaviate` | Weaviate export | `pip install skill-seekers[weaviate]` |
@@ -126,6 +129,13 @@ pip install skill-seekers[dev]
 | `embedding` | Embedding server | `pip install skill-seekers[embedding]` |
 | `video` | YouTube/video transcript extraction | `pip install skill-seekers[video]` |
 | `video-full` | + Whisper transcription, scene detection | `pip install skill-seekers[video-full]` |
+| `jupyter` | Jupyter Notebook extraction | `pip install skill-seekers[jupyter]` |
+| `asciidoc` | AsciiDoc document processing | `pip install skill-seekers[asciidoc]` |
+| `pptx` | PowerPoint presentation extraction | `pip install skill-seekers[pptx]` |
+| `rss` | RSS/Atom feed extraction | `pip install skill-seekers[rss]` |
+| `confluence` | Confluence wiki extraction | `pip install skill-seekers[confluence]` |
+| `notion` | Notion workspace extraction | `pip install skill-seekers[notion]` |
+| `chat` | Slack/Discord export extraction | `pip install skill-seekers[chat]` |
 | `all-llms` | All LLM platforms | `pip install skill-seekers[all-llms]` |
 | `all` | Everything | `pip install skill-seekers[all]` |
 | `dev` | Development tools | `pip install skill-seekers[dev]` |

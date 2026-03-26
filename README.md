@@ -4,7 +4,7 @@
 
 # Skill Seekers
 
-English | [简体中文](https://github.com/yusufkaraaslan/Skill_Seekers/blob/main/README.zh-CN.md)
+English | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Português](README.pt-BR.md) | [Türkçe](README.tr.md) | [العربية](README.ar.md) | [हिन्दी](README.hi.md) | [Русский](README.ru.md)
 
 [![Version](https://img.shields.io/badge/version-3.2.0-blue.svg)](https://github.com/yusufkaraaslan/Skill_Seekers/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -18,12 +18,30 @@ English | [简体中文](https://github.com/yusufkaraaslan/Skill_Seekers/blob/ma
 [![Website](https://img.shields.io/badge/Website-skillseekersweb.com-blue.svg)](https://skillseekersweb.com/)
 [![Twitter Follow](https://img.shields.io/twitter/follow/_yUSyUS_?style=social)](https://x.com/_yUSyUS_)
 [![GitHub Repo stars](https://img.shields.io/github/stars/yusufkaraaslan/Skill_Seekers?style=social)](https://github.com/yusufkaraaslan/Skill_Seekers)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/skill-seekers?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/skill-seekers)
 
-**🧠 The data layer for AI systems.** Skill Seekers turns any documentation, GitHub repo, PDF, or video into structured knowledge assets—ready to power AI Skills (Claude, Gemini, OpenAI), RAG pipelines (LangChain, LlamaIndex, Pinecone), and AI coding assistants (Cursor, Windsurf, Cline) in minutes, not hours.
+<a href="https://trendshift.io/repositories/18329" target="_blank"><img src="https://trendshift.io/api/badge/repositories/18329" alt="yusufkaraaslan%2FSkill_Seekers | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+
+**🧠 The data layer for AI systems.** Skill Seekers turns documentation sites, GitHub repos, PDFs, videos, notebooks, wikis, and 10+ more source types into structured knowledge assets—ready to power AI Skills (Claude, Gemini, OpenAI), RAG pipelines (LangChain, LlamaIndex, Pinecone), and AI coding assistants (Cursor, Windsurf, Cline) in minutes, not hours.
 
 > 🌐 **[Visit SkillSeekersWeb.com](https://skillseekersweb.com/)** - Browse 24+ preset configs, share your configs, and access complete documentation!
 
 > 📋 **[View Development Roadmap & Tasks](https://github.com/users/yusufkaraaslan/projects/2)** - 134 tasks across 10 categories, pick any to contribute!
+
+## 🌐 Ecosystem
+
+Skill Seekers is a multi-repo project. Here's where everything lives:
+
+| Repository | Description | Links |
+|-----------|-------------|-------|
+| **[Skill_Seekers](https://github.com/yusufkaraaslan/Skill_Seekers)** | Core CLI & MCP server (this repo) | [PyPI](https://pypi.org/project/skill-seekers/) |
+| **[skillseekersweb](https://github.com/yusufkaraaslan/skillseekersweb)** | Website & documentation | [Live](https://skillseekersweb.com/) |
+| **[skill-seekers-configs](https://github.com/yusufkaraaslan/skill-seekers-configs)** | Community config repository | |
+| **[skill-seekers-action](https://github.com/yusufkaraaslan/skill-seekers-action)** | GitHub Action for CI/CD | |
+| **[skill-seekers-plugin](https://github.com/yusufkaraaslan/skill-seekers-plugin)** | Claude Code plugin | |
+| **[homebrew-skill-seekers](https://github.com/yusufkaraaslan/homebrew-skill-seekers)** | Homebrew tap for macOS | |
+
+> **Want to contribute?** The website and configs repos are great starting points for new contributors!
 
 ## 🧠 The Data Layer for AI Systems
 
@@ -63,7 +81,7 @@ skill-seekers package output/react --target cursor      # → .cursorrules
 - 🎯 **AI Skill quality** — 500+ line SKILL.md files with examples, patterns, and guides
 - 📊 **RAG-ready chunks** — Smart chunking preserves code blocks and maintains context
 - 🎬 **Videos** — Extract code, transcripts, and structured knowledge from YouTube and local videos
-- 🔄 **Multi-source** — Combine docs + GitHub + PDFs + videos into one knowledge asset
+- 🔄 **Multi-source** — Combine 17 source types (docs, GitHub, PDFs, videos, notebooks, wikis, and more) into one knowledge asset
 - 🌐 **One prep, every target** — Export the same asset to 16 platforms without re-scraping
 - ✅ **Battle-tested** — 2,540+ tests, 24+ framework presets, production-ready
 
@@ -82,7 +100,7 @@ skill-seekers package output/django --target claude
 
 **That's it!** You now have `output/django-claude.zip` ready to use.
 
-### Other Sources
+### Other Sources (17 Supported)
 
 ```bash
 # GitHub repository
@@ -94,10 +112,46 @@ skill-seekers create ./my-project
 # PDF document
 skill-seekers create manual.pdf
 
+# Word document
+skill-seekers create report.docx
+
+# EPUB e-book
+skill-seekers create book.epub
+
+# Jupyter Notebook
+skill-seekers create notebook.ipynb
+
+# OpenAPI spec
+skill-seekers create openapi.yaml
+
+# PowerPoint presentation
+skill-seekers create presentation.pptx
+
+# AsciiDoc document
+skill-seekers create guide.adoc
+
+# Local HTML file
+skill-seekers create page.html
+
+# RSS/Atom feed
+skill-seekers create feed.rss
+
+# Man page
+skill-seekers create curl.1
+
 # Video (YouTube, Vimeo, or local file — requires skill-seekers[video])
 skill-seekers video --url https://www.youtube.com/watch?v=... --name mytutorial
 # First time? Auto-install GPU-aware visual deps:
 skill-seekers video --setup
+
+# Confluence wiki
+skill-seekers confluence --space TEAM --name wiki
+
+# Notion pages
+skill-seekers notion --database-id ... --name docs
+
+# Slack/Discord chat export
+skill-seekers chat --export-dir ./slack-export --name team-chat
 ```
 
 ### Export Everywhere
@@ -111,7 +165,7 @@ done
 
 ## What is Skill Seekers?
 
-Skill Seekers is the **data layer for AI systems**. It transforms documentation websites, GitHub repositories, PDF files, and videos into structured knowledge assets for every AI target:
+Skill Seekers is the **data layer for AI systems**. It transforms 17 source types—documentation websites, GitHub repositories, PDFs, videos, Jupyter Notebooks, Word/EPUB/AsciiDoc documents, OpenAPI specs, PowerPoint presentations, RSS feeds, man pages, Confluence wikis, Notion pages, Slack/Discord exports, and more—into structured knowledge assets for every AI target:
 
 | Use Case | What you get | Examples |
 |----------|-------------|---------|
@@ -137,7 +191,7 @@ Skill Seekers is the **data layer for AI systems**. It transforms documentation 
 
 Instead of spending days on manual preprocessing, Skill Seekers:
 
-1. **Ingests** — docs, GitHub repos, local codebases, PDFs, videos
+1. **Ingests** — docs, GitHub repos, local codebases, PDFs, videos, notebooks, wikis, and 10+ more source types
 2. **Analyzes** — deep AST parsing, pattern detection, API extraction
 3. **Structures** — categorized reference files with metadata
 4. **Enhances** — AI-powered SKILL.md generation (Claude, Gemini, or local)
@@ -212,7 +266,7 @@ Instead of spending days on manual preprocessing, Skill Seekers:
 - ✅ **Backward Compatible** - Legacy single-source configs still work
 
 ### 🤖 Multi-LLM Platform Support
-- ✅ **4 LLM Platforms** - Claude AI, Google Gemini, OpenAI ChatGPT, Generic Markdown
+- ✅ **12 LLM Platforms** - Claude AI, Google Gemini, OpenAI ChatGPT, MiniMax AI, Generic Markdown, OpenCode, Kimi (Moonshot AI), DeepSeek AI, Qwen (Alibaba), OpenRouter, Together AI, Fireworks AI
 - ✅ **Universal Scraping** - Same documentation works for all platforms
 - ✅ **Platform-Specific Packaging** - Optimized formats for each LLM
 - ✅ **One-Command Export** - `--target` flag selects platform
@@ -224,6 +278,7 @@ Instead of spending days on manual preprocessing, Skill Seekers:
 | **Claude AI** | ZIP + YAML | ✅ Auto | ✅ Yes | ANTHROPIC_API_KEY | ANTHROPIC_BASE_URL |
 | **Google Gemini** | tar.gz | ✅ Auto | ✅ Yes | GOOGLE_API_KEY | - |
 | **OpenAI ChatGPT** | ZIP + Vector Store | ✅ Auto | ✅ Yes | OPENAI_API_KEY | - |
+| **MiniMax AI** | ZIP + Knowledge Files | ✅ Auto | ✅ Yes | MINIMAX_API_KEY | - |
 | **Generic Markdown** | ZIP | ❌ Manual | ❌ No | - | - |
 
 ```bash
@@ -240,6 +295,11 @@ skill-seekers upload react-gemini.tar.gz --target gemini
 pip install skill-seekers[openai]
 skill-seekers package output/react/ --target openai
 skill-seekers upload react-openai.zip --target openai
+
+# MiniMax AI
+pip install skill-seekers[minimax]
+skill-seekers package output/react/ --target minimax
+skill-seekers upload react-minimax.zip --target minimax
 
 # Generic Markdown (universal export)
 skill-seekers package output/react/ --target markdown
@@ -275,6 +335,9 @@ pip install skill-seekers[gemini]
 
 # Install with OpenAI support
 pip install skill-seekers[openai]
+
+# Install with MiniMax support
+pip install skill-seekers[minimax]
 
 # Install with all LLM platforms
 pip install skill-seekers[all-llms]
@@ -610,6 +673,13 @@ skill-seekers-setup
 | `pip install skill-seekers[mcp]` | + MCP server for Claude Code, Cursor, etc. |
 | `pip install skill-seekers[video]` | + YouTube/Vimeo transcript & metadata extraction |
 | `pip install skill-seekers[video-full]` | + Whisper transcription & visual frame extraction |
+| `pip install skill-seekers[jupyter]` | + Jupyter Notebook support |
+| `pip install skill-seekers[pptx]` | + PowerPoint support |
+| `pip install skill-seekers[confluence]` | + Confluence wiki support |
+| `pip install skill-seekers[notion]` | + Notion pages support |
+| `pip install skill-seekers[rss]` | + RSS/Atom feed support |
+| `pip install skill-seekers[chat]` | + Slack/Discord chat export support |
+| `pip install skill-seekers[asciidoc]` | + AsciiDoc document support |
 | `pip install skill-seekers[all]` | Everything enabled |
 
 > **Video visual deps (GPU-aware):** After installing `skill-seekers[video-full]`, run
@@ -655,21 +725,21 @@ skill-seekers install --config react --dry-run
 
 ## 📊 Feature Matrix
 
-Skill Seekers supports **4 LLM platforms** and **6 skill modes** with full feature parity.
+Skill Seekers supports **12 LLM platforms**, **17 source types**, and full feature parity across all targets.
 
-**Platforms:** Claude AI, Google Gemini, OpenAI ChatGPT, Generic Markdown
-**Skill Modes:** Documentation, GitHub, PDF, Video, Unified Multi-Source, Local Repository
+**Platforms:** Claude AI, Google Gemini, OpenAI ChatGPT, MiniMax AI, Generic Markdown, OpenCode, Kimi (Moonshot AI), DeepSeek AI, Qwen (Alibaba), OpenRouter, Together AI, Fireworks AI
+**Source Types:** Documentation websites, GitHub repos, PDFs, Word (.docx), EPUB, Video, Local codebases, Jupyter Notebooks, Local HTML, OpenAPI/Swagger, AsciiDoc, PowerPoint (.pptx), RSS/Atom feeds, Man pages, Confluence wikis, Notion pages, Slack/Discord chat exports
 
 See [Complete Feature Matrix](docs/FEATURE_MATRIX.md) for detailed platform and feature support.
 
 ### Quick Platform Comparison
 
-| Feature | Claude | Gemini | OpenAI | Markdown |
-|---------|--------|--------|--------|----------|
-| Format | ZIP + YAML | tar.gz | ZIP + Vector | ZIP |
-| Upload | ✅ API | ✅ API | ✅ API | ❌ Manual |
-| Enhancement | ✅ Sonnet 4 | ✅ 2.0 Flash | ✅ GPT-4o | ❌ None |
-| All Skill Modes | ✅ | ✅ | ✅ | ✅ |
+| Feature | Claude | Gemini | OpenAI | MiniMax | Markdown |
+|---------|--------|--------|--------|--------|----------|
+| Format | ZIP + YAML | tar.gz | ZIP + Vector | ZIP + Knowledge | ZIP |
+| Upload | ✅ API | ✅ API | ✅ API | ✅ API | ❌ Manual |
+| Enhancement | ✅ Sonnet 4 | ✅ 2.0 Flash | ✅ GPT-4o | ✅ M2.7 | ❌ None |
+| All Skill Modes | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
@@ -842,6 +912,27 @@ graph LR
 3. **Enhance**: AI analyzes docs and creates comprehensive SKILL.md with examples
 4. **Package**: Bundles everything into a Claude-ready `.zip` file
 
+## Architecture
+
+The system is organized into **8 core modules** and **5 utility modules** (~200 classes total):
+
+![Package Overview](docs/UML/exports/00_package_overview.png)
+
+| Module | Purpose | Key Classes |
+|--------|---------|-------------|
+| **CLICore** | Git-style command dispatcher | `CLIDispatcher`, `SourceDetector`, `CreateCommand` |
+| **Scrapers** | 17 source-type extractors | `DocToSkillConverter`, `GitHubScraper`, `UnifiedScraper` |
+| **Adaptors** | 20+ output platform formats | `SkillAdaptor` (ABC), `ClaudeAdaptor`, `LangChainAdaptor` |
+| **Analysis** | C3.x codebase analysis pipeline | `UnifiedCodebaseAnalyzer`, `PatternRecognizer`, 10 GoF detectors |
+| **Enhancement** | AI-powered skill improvement | `AIEnhancer`, `UnifiedEnhancer`, `WorkflowEngine` |
+| **Packaging** | Package, upload, install skills | `PackageSkill`, `InstallAgent` |
+| **MCP** | FastMCP server (34 tools) | `SkillSeekerMCPServer`, 8 tool modules |
+| **Sync** | Doc change detection | `ChangeDetector`, `SyncMonitor`, `Notifier` |
+
+Utility modules: **Parsers** (28 CLI parsers), **Storage** (S3/GCS/Azure), **Embedding** (multi-provider vectors), **Benchmark** (performance), **Utilities** (16 shared helpers).
+
+Full UML diagrams: **[docs/UML_ARCHITECTURE.md](docs/UML_ARCHITECTURE.md)** | StarUML project: `docs/UML/skill_seekers.mdj` | HTML API reference: `docs/UML/html/`
+
 ## 📋 Prerequisites
 
 **Before you start, make sure you have:**
@@ -895,7 +986,7 @@ In Claude Code, just ask:
 
 ## 🤖 Installing to AI Agents
 
-Skill Seekers can automatically install skills to 10+ AI coding agents.
+Skill Seekers can automatically install skills to 18 AI coding agents.
 
 ```bash
 # Install to specific agent
@@ -919,6 +1010,13 @@ skill-seekers install-agent output/react/ --agent cursor --dry-run
 | **Goose** | `~/.config/goose/skills/` | Global |
 | **OpenCode** | `~/.opencode/skills/` | Global |
 | **Windsurf** | `~/.windsurf/skills/` | Global |
+| **Roo Code** | `.roo/skills/` | Project |
+| **Cline** | `.cline/skills/` | Project |
+| **Aider** | `~/.aider/skills/` | Global |
+| **Bolt** | `.bolt/skills/` | Project |
+| **Kilo Code** | `.kilo/skills/` | Project |
+| **Continue** | `~/.continue/skills/` | Global |
+| **Kimi Code** | `~/.kimi/skills/` | Global |
 
 ---
 
@@ -1101,6 +1199,12 @@ skill-seekers config --github
 - **[QUICKSTART.md](QUICKSTART.md)** - Quick start for experienced users
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
 - **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** - One-page cheat sheet
+
+### Architecture
+- **[docs/UML_ARCHITECTURE.md](docs/UML_ARCHITECTURE.md)** - UML architecture overview with 14 diagrams
+- **[docs/UML/exports/](docs/UML/exports/)** - PNG diagram exports (package overview + 13 class diagrams)
+- **[docs/UML/html/](docs/UML/html/index.html/index.html)** - Full HTML API reference (all classes, operations, attributes)
+- **[docs/UML/skill_seekers.mdj](docs/UML/skill_seekers.mdj)** - StarUML project file (open with [StarUML](https://staruml.io/))
 
 ### Guides
 - **[docs/LARGE_DOCUMENTATION.md](docs/LARGE_DOCUMENTATION.md)** - Handle 10K-40K+ page docs

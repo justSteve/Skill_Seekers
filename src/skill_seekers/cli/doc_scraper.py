@@ -47,7 +47,7 @@ from skill_seekers.cli.llms_txt_detector import LlmsTxtDetector
 from skill_seekers.cli.llms_txt_downloader import LlmsTxtDownloader
 from skill_seekers.cli.llms_txt_parser import LlmsTxtParser
 from skill_seekers.cli.arguments.scrape import add_scrape_arguments
-from skill_seekers.cli.utils import setup_logging
+from skill_seekers.cli.utils import sanitize_url, setup_logging
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -63,6 +63,11 @@ FALLBACK_MAIN_SELECTORS = [
     ".doc-content",
     "#main-content",
 ]
+
+# Pre-compiled regex patterns for frequently called methods
+_WHITESPACE_RE = re.compile(r"\s+")
+_SAFE_TITLE_RE = re.compile(r"[^\w\s-]")
+_SAFE_TITLE_SEP_RE = re.compile(r"[-\s]+")
 
 
 def infer_description_from_docs(
@@ -188,11 +193,21 @@ class DocToSkillConverter:
         # Support multiple starting URLs
         start_urls = config.get("start_urls", [self.base_url])
         self.pending_urls = deque(start_urls)
+        self._enqueued_urls: set[str] = set(
+            start_urls
+        )  # Track all ever-enqueued URLs for O(1) dedup
         self.pages: list[dict[str, Any]] = []
         self.pages_scraped = 0
+        self.pages_saved = 0
+        self.pages_skipped = 0
 
         # Language detection
         self.language_detector = LanguageDetector(min_confidence=0.15)
+
+        # Pre-cache URL patterns for faster is_valid_url checks
+        url_patterns = config.get("url_patterns", {})
+        self._include_patterns: list[str] = url_patterns.get("include", [])
+        self._exclude_patterns: list[str] = url_patterns.get("exclude", [])
 
         # Thread-safe lock for parallel scraping
         if self.workers > 1:
@@ -211,6 +226,17 @@ class DocToSkillConverter:
         if resume and not dry_run:
             self.load_checkpoint()
 
+    def _enqueue_url(self, url: str) -> None:
+        """Add a URL to the pending queue if not already visited or enqueued (O(1)).
+
+        Applies :func:`sanitize_url` to percent-encode square brackets before
+        enqueueing, preventing ``Invalid IPv6 URL`` errors on fetch (see #284).
+        """
+        url = sanitize_url(url)
+        if url not in self.visited_urls and url not in self._enqueued_urls:
+            self._enqueued_urls.add(url)
+            self.pending_urls.append(url)
+
     def is_valid_url(self, url: str) -> bool:
         """Check if URL should be scraped based on patterns.
 
@@ -223,14 +249,19 @@ class DocToSkillConverter:
         if not url.startswith(self.base_url):
             return False
 
-        # Include patterns
-        includes = self.config.get("url_patterns", {}).get("include", [])
-        if includes and not any(pattern in url for pattern in includes):
+        if self._include_patterns and not any(pattern in url for pattern in self._include_patterns):
             return False
 
-        # Exclude patterns
-        excludes = self.config.get("url_patterns", {}).get("exclude", [])
-        return not any(pattern in url for pattern in excludes)
+        return not any(pattern in url for pattern in self._exclude_patterns)
+
+    @staticmethod
+    def _has_md_extension(url: str) -> bool:
+        """Check if URL path ends with .md extension.
+
+        Uses URL path parsing instead of substring matching to avoid
+        false positives on URLs like /embed/page or /cmd-line.
+        """
+        return urlparse(url).path.endswith(".md")
 
     def save_checkpoint(self) -> None:
         """Save progress checkpoint"""
@@ -264,7 +295,9 @@ class DocToSkillConverter:
                 checkpoint_data = json.load(f)
 
             self.visited_urls = set(checkpoint_data["visited_urls"])
-            self.pending_urls = deque(checkpoint_data["pending_urls"])
+            pending = checkpoint_data["pending_urls"]
+            self.pending_urls = deque(pending)
+            self._enqueued_urls = set(pending)
             self.pages_scraped = checkpoint_data["pages_scraped"]
 
             logger.info("✅ Resumed from checkpoint")
@@ -337,11 +370,13 @@ class DocToSkillConverter:
 
         # Extract links from entire page (always, even if main content not found).
         # This allows discovery of navigation links outside the main content area.
+        seen_links: set[str] = set()
         for link in soup.find_all("a", href=True):
             href = urljoin(url, link["href"])
             # Strip anchor fragments to avoid treating #anchors as separate pages
             href = href.split("#")[0]
-            if self.is_valid_url(href) and href not in page["links"]:
+            if href not in seen_links and self.is_valid_url(href):
+                seen_links.add(href)
                 page["links"].append(href)
 
         # Find main content using shared fallback logic
@@ -413,8 +448,6 @@ class DocToSkillConverter:
             Only .md links are extracted to avoid client-side rendered HTML pages.
             Anchor fragments (#section) are stripped from links.
         """
-        import re
-
         # Detect if content is actually HTML (some .md URLs return HTML)
         if content.strip().startswith("<!DOCTYPE") or content.strip().startswith("<html"):
             return self._extract_html_as_markdown(content, url)
@@ -440,7 +473,11 @@ class DocToSkillConverter:
                     else:
                         continue
                     full_url = full_url.split("#")[0]
-                    if ".md" in full_url and self.is_valid_url(full_url) and full_url not in links:
+                    if (
+                        self._has_md_extension(full_url)
+                        and self.is_valid_url(full_url)
+                        and full_url not in links
+                    ):
                         links.append(full_url)
 
                 return {
@@ -529,7 +566,11 @@ class DocToSkillConverter:
             # Strip anchor fragments
             full_url = full_url.split("#")[0]
             # Only include .md URLs to avoid client-side rendered HTML pages
-            if ".md" in full_url and self.is_valid_url(full_url) and full_url not in page["links"]:
+            if (
+                self._has_md_extension(full_url)
+                and self.is_valid_url(full_url)
+                and full_url not in page["links"]
+            ):
                 page["links"].append(full_url)
 
         return page
@@ -649,19 +690,21 @@ class DocToSkillConverter:
 
     def clean_text(self, text: str) -> str:
         """Clean text content"""
-        text = re.sub(r"\s+", " ", text)
-        return text.strip()
+        return _WHITESPACE_RE.sub(" ", text).strip()
 
     def save_page(self, page: dict[str, Any]) -> None:
         """Save page data (skip pages with empty content)"""
         # Skip pages with empty or very short content
         if not page.get("content") or len(page.get("content", "")) < 50:
+            self.pages_skipped += 1
             logger.debug("Skipping page with empty/short content: %s", page.get("url", "unknown"))
             return
 
+        self.pages_saved += 1
+
         url_hash = hashlib.md5(page["url"].encode()).hexdigest()[:10]
-        safe_title = re.sub(r"[^\w\s-]", "", page["title"])[:50]
-        safe_title = re.sub(r"[-\s]+", "_", safe_title)
+        safe_title = _SAFE_TITLE_RE.sub("", page["title"])[:50]
+        safe_title = _SAFE_TITLE_SEP_RE.sub("_", safe_title)
 
         filename = f"{safe_title}_{url_hash}.json"
         filepath = os.path.join(self.data_dir, "pages", filename)
@@ -683,39 +726,35 @@ class DocToSkillConverter:
             Supports both HTML pages and Markdown (.md) files
         """
         try:
+            # Sanitise brackets before fetching (safety net for start_urls; see #284)
+            url = sanitize_url(url)
+
             # Scraping part (no lock needed - independent)
             headers = {"User-Agent": "Mozilla/5.0 (Documentation Scraper)"}
             response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
 
             # Check if this is a Markdown file
-            if url.endswith(".md") or ".md" in url:
+            if self._has_md_extension(url):
                 page = self._extract_markdown_content(response.text, url)
             else:
                 soup = BeautifulSoup(response.content, "html.parser")
                 page = self.extract_content(soup, url)
 
-            # Thread-safe operations (lock required)
+            # Thread-safe operations (lock required for workers > 1)
             if self.workers > 1:
                 with self.lock:
                     logger.info("  %s", url)
                     self.save_page(page)
                     self.pages.append(page)
-
-                    # Add new URLs
                     for link in page["links"]:
-                        if link not in self.visited_urls and link not in self.pending_urls:
-                            self.pending_urls.append(link)
+                        self._enqueue_url(link)
             else:
-                # Single-threaded mode (no lock needed)
                 logger.info("  %s", url)
                 self.save_page(page)
                 self.pages.append(page)
-
-                # Add new URLs
                 for link in page["links"]:
-                    if link not in self.visited_urls and link not in self.pending_urls:
-                        self.pending_urls.append(link)
+                    self._enqueue_url(link)
 
             # Rate limiting
             rate_limit = self.config.get("rate_limit", DEFAULT_RATE_LIMIT)
@@ -746,13 +785,16 @@ class DocToSkillConverter:
         """
         async with semaphore:  # Limit concurrent requests
             try:
+                # Sanitise brackets before fetching (safety net; see #284)
+                url = sanitize_url(url)
+
                 # Async HTTP request
                 headers = {"User-Agent": "Mozilla/5.0 (Documentation Scraper)"}
                 response = await client.get(url, headers=headers, timeout=30.0)
                 response.raise_for_status()
 
                 # Check if this is a Markdown file
-                if url.endswith(".md") or ".md" in url:
+                if self._has_md_extension(url):
                     page = self._extract_markdown_content(response.text, url)
                 else:
                     # BeautifulSoup parsing (still synchronous, but fast)
@@ -766,8 +808,7 @@ class DocToSkillConverter:
 
                 # Add new URLs
                 for link in page["links"]:
-                    if link not in self.visited_urls and link not in self.pending_urls:
-                        self.pending_urls.append(link)
+                    self._enqueue_url(link)
 
                 # Rate limiting
                 rate_limit = self.config.get("rate_limit", DEFAULT_RATE_LIMIT)
@@ -779,71 +820,45 @@ class DocToSkillConverter:
 
     def _convert_to_md_urls(self, urls: list[str]) -> list[str]:
         """
-        Convert URLs to .md format, trying /index.html.md suffix for non-.md URLs.
-        Strips anchor fragments (#anchor) and deduplicates base URLs to avoid 404 errors.
-        不预先检查 URL 是否存在，直接加入队列，在爬取时再验证。
+        Clean URLs from llms.txt: strip anchor fragments, deduplicate base URLs.
+
+        Previously this method blindly appended /index.html.md to non-.md URLs,
+        which caused 404 errors on sites that don't serve raw markdown files
+        (e.g. Discord docs, see issue #277). Now it preserves original URLs as-is
+        and lets the scraper handle both HTML and markdown content.
 
         Args:
             urls: List of URLs to process
 
         Returns:
-            List of .md URLs (未验证, deduplicated, no anchors)
+            List of cleaned, deduplicated URLs (no anchors)
         """
         from urllib.parse import urlparse, urlunparse
 
         seen_base_urls = set()
-        md_urls = []
+        cleaned_urls = []
 
         for url in urls:
             # Parse URL to extract and remove fragment (anchor)
             parsed = urlparse(url)
             base_url = urlunparse(parsed._replace(fragment=""))  # Remove #anchor
 
-            # Skip if we've already processed this base URL
-            if base_url in seen_base_urls:
-                continue
-            seen_base_urls.add(base_url)
+            # Normalize trailing slashes for dedup (but keep original form)
+            dedup_key = base_url.rstrip("/")
 
-            # Check if URL already ends with .md (not just contains "md")
-            if base_url.endswith(".md"):
-                md_urls.append(base_url)
-            else:
-                # 直接转换为 .md 格式，不发送 HEAD 请求检查
-                base_url = base_url.rstrip("/")
-                md_url = f"{base_url}/index.html.md"
-                md_urls.append(md_url)
+            # Skip if we've already processed this base URL
+            if dedup_key in seen_base_urls:
+                continue
+            seen_base_urls.add(dedup_key)
+
+            cleaned_urls.append(base_url)
 
         logger.info(
-            "  ✓ Converted %d URLs to %d unique .md URLs (anchors stripped, will validate during crawl)",
+            "  ✓ Cleaned %d URLs to %d unique URLs (anchors stripped, will validate during crawl)",
             len(urls),
-            len(md_urls),
+            len(cleaned_urls),
         )
-        return md_urls
-
-    # ORIGINAL _convert_to_md_urls (with HEAD request validation):
-    # def _convert_to_md_urls(self, urls: List[str]) -> List[str]:
-    #     md_urls = []
-    #     non_md_urls = []
-    #     for url in urls:
-    #         if '.md' in url:
-    #             md_urls.append(url)
-    #         else:
-    #             non_md_urls.append(url)
-    #     if non_md_urls:
-    #         logger.info("  🔄 Trying to convert %d non-.md URLs to .md format...", len(non_md_urls))
-    #         converted = 0
-    #         for url in non_md_urls:
-    #             url = url.rstrip('/')
-    #             md_url = f"{url}/index.html.md"
-    #             try:
-    #                 resp = requests.head(md_url, timeout=5, allow_redirects=True)
-    #                 if resp.status_code == 200:
-    #                     md_urls.append(md_url)
-    #                     converted += 1
-    #             except Exception:
-    #                 pass
-    #         logger.info("  ✓ Converted %d URLs to .md format", converted)
-    #     return md_urls
+        return cleaned_urls
 
     def _try_llms_txt(self) -> bool:
         """
@@ -914,18 +929,18 @@ class DocToSkillConverter:
                 # Extract URLs from llms.txt and add to pending_urls for BFS crawling
                 extracted_urls = parser.extract_urls()
                 if extracted_urls:
-                    # Convert non-.md URLs to .md format by trying /index.html.md suffix
-                    md_urls = self._convert_to_md_urls(extracted_urls)
+                    # Clean URLs: strip anchors, deduplicate
+                    cleaned_urls = self._convert_to_md_urls(extracted_urls)
                     logger.info(
-                        "\n🔗 Found %d URLs in llms.txt (%d .md files), starting BFS crawl...",
+                        "\n🔗 Found %d URLs in llms.txt (%d unique), starting BFS crawl...",
                         len(extracted_urls),
-                        len(md_urls),
+                        len(cleaned_urls),
                     )
 
                     # Filter URLs based on url_patterns config
-                    for url in md_urls:
-                        if self.is_valid_url(url) and url not in self.visited_urls:
-                            self.pending_urls.append(url)
+                    for url in cleaned_urls:
+                        if self.is_valid_url(url):
+                            self._enqueue_url(url)
 
                     logger.info(
                         "  📋 %d URLs added to crawl queue after filtering",
@@ -1000,18 +1015,18 @@ class DocToSkillConverter:
         # Extract URLs from llms.txt and add to pending_urls for BFS crawling
         extracted_urls = parser.extract_urls()
         if extracted_urls:
-            # Convert non-.md URLs to .md format by trying /index.html.md suffix
-            md_urls = self._convert_to_md_urls(extracted_urls)
+            # Clean URLs: strip anchors, deduplicate
+            cleaned_urls = self._convert_to_md_urls(extracted_urls)
             logger.info(
-                "\n🔗 Found %d URLs in llms.txt (%d .md files), starting BFS crawl...",
+                "\n🔗 Found %d URLs in llms.txt (%d unique), starting BFS crawl...",
                 len(extracted_urls),
-                len(md_urls),
+                len(cleaned_urls),
             )
 
             # Filter URLs based on url_patterns config
-            for url in md_urls:
-                if self.is_valid_url(url) and url not in self.visited_urls:
-                    self.pending_urls.append(url)
+            for url in cleaned_urls:
+                if self.is_valid_url(url):
+                    self._enqueue_url(url)
 
             logger.info(
                 "  📋 %d URLs added to crawl queue after filtering",
@@ -1104,6 +1119,7 @@ class DocToSkillConverter:
 
                 if self.dry_run:
                     # Just show what would be scraped
+                    url = sanitize_url(url)  # encode brackets before fetch (see #284)
                     logger.info("  [Preview] %s", url)
                     try:
                         headers = {"User-Agent": "Mozilla/5.0 (Documentation Scraper - Dry Run)"}
@@ -1115,8 +1131,8 @@ class DocToSkillConverter:
                         for link in soup.find_all("a", href=True):
                             href = urljoin(url, link["href"])
                             href = href.split("#")[0]
-                            if self.is_valid_url(href) and href not in self.visited_urls:
-                                self.pending_urls.append(href)
+                            if self.is_valid_url(href):
+                                self._enqueue_url(href)
                     except Exception as e:
                         # Failed to extract links in fast mode, continue anyway
                         logger.warning("⚠️  Warning: Could not extract links from %s: %s", url, e)
@@ -1208,7 +1224,7 @@ class DocToSkillConverter:
                 )
             logger.info("\n💡 To actually scrape, run without --dry-run")
         else:
-            logger.info("\n✅ Scraped %d pages", len(self.visited_urls))
+            self._log_scrape_completion()
             self.save_summary()
 
     async def scrape_all_async(self) -> None:
@@ -1285,6 +1301,7 @@ class DocToSkillConverter:
                 for url in batch:
                     if unlimited or len(self.visited_urls) <= preview_limit:
                         if self.dry_run:
+                            url = sanitize_url(url)  # encode brackets (see #284)
                             logger.info("  [Preview] %s", url)
                             # Discover links from full page (async dry-run)
                             try:
@@ -1299,8 +1316,8 @@ class DocToSkillConverter:
                                 for link in soup.find_all("a", href=True):
                                     href = urljoin(url, link["href"])
                                     href = href.split("#")[0]
-                                    if self.is_valid_url(href) and href not in self.visited_urls:
-                                        self.pending_urls.append(href)
+                                    if self.is_valid_url(href):
+                                        self._enqueue_url(href)
                             except Exception as e:
                                 logger.warning(
                                     "⚠️  Warning: Could not extract links from %s: %s", url, e
@@ -1313,7 +1330,12 @@ class DocToSkillConverter:
 
                 # Wait for batch to complete before continuing
                 if tasks:
-                    await asyncio.gather(*tasks, return_exceptions=True)
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+                    for result in results:
+                        if isinstance(result, Exception):
+                            logger.error(
+                                "  ✗ Async task failed: %s: %s", type(result).__name__, result
+                            )
                     tasks = []
                     self.pages_scraped = len(self.visited_urls)
 
@@ -1331,7 +1353,10 @@ class DocToSkillConverter:
 
             # Wait for any remaining tasks
             if tasks:
-                await asyncio.gather(*tasks, return_exceptions=True)
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                for result in results:
+                    if isinstance(result, Exception):
+                        logger.error("  ✗ Async task failed: %s: %s", type(result).__name__, result)
 
         if self.dry_run:
             logger.info("\n✅ Dry run complete: would scrape ~%d pages", len(self.visited_urls))
@@ -1342,8 +1367,42 @@ class DocToSkillConverter:
                 )
             logger.info("\n💡 To actually scrape, run without --dry-run")
         else:
-            logger.info("\n✅ Scraped %d pages (async mode)", len(self.visited_urls))
+            self._log_scrape_completion()
             self.save_summary()
+
+    def _log_scrape_completion(self) -> None:
+        """Log scrape completion with accurate saved/skipped counts."""
+        visited = len(self.visited_urls)
+        if self.pages_skipped > 0:
+            logger.info(
+                "\n✅ Scraped %d pages (%d saved, %d skipped - empty content)",
+                visited,
+                self.pages_saved,
+                self.pages_skipped,
+            )
+        else:
+            logger.info(
+                "\n✅ Scraped %d pages (%d saved)",
+                visited,
+                self.pages_saved,
+            )
+
+        # SPA detection: warn when most pages had empty content
+        if visited >= 5 and self.pages_saved == 0:
+            logger.warning(
+                "⚠️  All %d pages had empty content. This site likely requires "
+                "JavaScript rendering (SPA/React/Vue). Scraping cannot extract "
+                "content from JavaScript-rendered pages.",
+                visited,
+            )
+        elif visited >= 10 and self.pages_skipped > 0:
+            skip_ratio = self.pages_skipped / visited
+            if skip_ratio > 0.8:
+                logger.warning(
+                    "⚠️  %d%% of pages had empty content. This site may use "
+                    "JavaScript rendering for some pages.",
+                    int(skip_ratio * 100),
+                )
 
     def save_summary(self) -> None:
         """Save scraping summary"""
@@ -1356,8 +1415,11 @@ class DocToSkillConverter:
             "pages": [{"title": p["title"], "url": p["url"]} for p in self.pages],
         }
 
-        with open(f"{self.data_dir}/summary.json", "w", encoding="utf-8") as f:
-            json.dump(summary, f, indent=2, ensure_ascii=False)
+        try:
+            with open(f"{self.data_dir}/summary.json", "w", encoding="utf-8") as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
+        except OSError as e:
+            logger.error("  ✗ Failed to save summary: %s", e)
 
     def load_scraped_data(self) -> list[dict[str, Any]]:
         """Load previously scraped data"""
@@ -1395,6 +1457,11 @@ class DocToSkillConverter:
         categories: dict[str, list[dict[str, Any]]] = {cat: [] for cat in category_defs}
         categories["other"] = []
 
+        # Pre-lowercase keywords once instead of per-page per-keyword
+        lowered_defs = {
+            cat: [kw.lower() for kw in keywords] for cat, keywords in category_defs.items()
+        }
+
         for page in pages:
             url = page["url"].lower()
             title = page["title"].lower()
@@ -1404,11 +1471,10 @@ class DocToSkillConverter:
 
             categorized = False
 
-            # Match against keywords
-            for cat, keywords in category_defs.items():
+            # Match against pre-lowercased keywords
+            for cat, keywords in lowered_defs.items():
                 score = 0
                 for keyword in keywords:
-                    keyword = keyword.lower()
                     if keyword in url:
                         score += 3
                     if keyword in title:
@@ -1450,15 +1516,12 @@ class DocToSkillConverter:
             if count >= 3:  # At least 3 pages
                 categories[seg] = [seg]
 
-        # Add common defaults
-        if "tutorial" not in categories and any(
-            "tutorial" in url for url in [p["url"] for p in pages]
-        ):
+        # Add common defaults (use pre-built URL list to avoid repeated comprehensions)
+        all_urls = [p["url"] for p in pages]
+        if "tutorials" not in categories and any("tutorial" in url for url in all_urls):
             categories["tutorials"] = ["tutorial", "guide", "getting-started"]
 
-        if "api" not in categories and any(
-            "api" in url or "reference" in url for url in [p["url"] for p in pages]
-        ):
+        if "api" not in categories and any("api" in url or "reference" in url for url in all_urls):
             categories["api"] = ["api", "reference", "class"]
 
         return categories
@@ -1707,6 +1770,12 @@ To refresh this skill with updated documentation:
 
         if not pages:
             logger.error("✗ No scraped data found!")
+            if self.pages_skipped > 0:
+                logger.error(
+                    "   %d pages were visited but had empty content. "
+                    "The site may require JavaScript rendering (SPA).",
+                    self.pages_skipped,
+                )
             return False
 
         logger.info("  ✓ Loaded %d pages\n", len(pages))
@@ -1937,8 +2006,6 @@ def load_config(config_path: str) -> dict[str, Any]:
         # Log config type
         if validator.is_unified:
             logger.debug("✓ Unified config format detected")
-        else:
-            logger.debug("✓ Legacy config format detected")
     except ValueError as e:
         logger.error("❌ Configuration validation errors in %s:", config_path)
         logger.error("   %s", str(e))

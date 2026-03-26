@@ -270,6 +270,78 @@ API: https://example.com/api/reference.md
         result = parser._clean_url("https://example.com/docs/guide.md")
         self.assertEqual(result, "https://example.com/docs/guide.md")
 
+    def test_clean_url_bracket_encoding(self):
+        """Test that square brackets are percent-encoded in URL path (#284)."""
+        from skill_seekers.cli.llms_txt_parser import LlmsTxtParser
+
+        parser = LlmsTxtParser("", base_url="https://example.com")
+
+        result = parser._clean_url("https://example.com/api/[v1]/users")
+        self.assertEqual(result, "https://example.com/api/%5Bv1%5D/users")
+
+    def test_clean_url_bracket_encoding_preserves_host(self):
+        """Test that bracket encoding does not affect host (IPv6 literals)."""
+        from skill_seekers.cli.llms_txt_parser import LlmsTxtParser
+
+        parser = LlmsTxtParser("", base_url="https://example.com")
+
+        # Brackets should only be encoded in path, not in host
+        result = parser._clean_url("https://example.com/path/[param]/end")
+        self.assertIn("%5B", result)
+        self.assertIn("%5D", result)
+        self.assertIn("example.com", result)
+
+    def test_clean_url_bracket_in_query(self):
+        """Test that brackets in query params are also encoded."""
+        from skill_seekers.cli.llms_txt_parser import LlmsTxtParser
+
+        parser = LlmsTxtParser("", base_url="https://example.com")
+
+        result = parser._clean_url("https://example.com/search?filter=[active]")
+        self.assertEqual(result, "https://example.com/search?filter=%5Bactive%5D")
+
+    def test_clean_url_malformed_anchor_with_brackets(self):
+        """Test combined malformed anchor stripping + bracket encoding."""
+        from skill_seekers.cli.llms_txt_parser import LlmsTxtParser
+
+        parser = LlmsTxtParser("", base_url="https://example.com")
+
+        # Malformed anchor should be stripped, then brackets encoded
+        result = parser._clean_url("https://example.com/api/[v1]/page#section/deep")
+        self.assertEqual(result, "https://example.com/api/%5Bv1%5D/page")
+
+    def test_clean_url_malformed_ipv6_no_crash(self):
+        """Test that incomplete IPv6 placeholder URLs don't crash (issue #284).
+
+        Python 3.14 raises ValueError from urlparse() on these URLs.
+        Seen in real-world llms-full.txt from docs.openclaw.ai.
+        """
+        from skill_seekers.cli.llms_txt_parser import LlmsTxtParser
+
+        parser = LlmsTxtParser("", base_url="https://example.com")
+
+        # Must not raise ValueError
+        result = parser._clean_url("http://[fdaa:x:x:x:x::x")
+        self.assertIn("%5B", result)
+        self.assertNotIn("[", result)
+
+    def test_extract_urls_with_ipv6_placeholder_no_crash(self):
+        """Test that extract_urls handles content with broken IPv6 URLs (issue #284)."""
+        from skill_seekers.cli.llms_txt_parser import LlmsTxtParser
+
+        content = """# Docs
+- [Guide](https://example.com/guide.md)
+- Connect to http://[fdaa:x:x:x:x::x for private networking
+- [API](https://example.com/api.md)
+"""
+        parser = LlmsTxtParser(content, base_url="https://example.com")
+
+        # Must not raise ValueError
+        urls = parser.extract_urls()
+        # Should still extract the valid URLs
+        valid = [u for u in urls if "example.com" in u]
+        self.assertGreaterEqual(len(valid), 2)
+
     def test_deduplicate_urls(self):
         """Test that duplicate URLs are removed."""
         from skill_seekers.cli.llms_txt_parser import LlmsTxtParser
